@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAKE EMERGENCY CALL GENERATOR | CAD Simulator</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Tailwind CDN (with config) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cadDark: '#080c14',
+            cadPanel: '#0e1626',
+            cadCard: '#131e33',
+            cadBorder: '#1e2e4a',
+            cadAccent: '#00e5ff',
+            cadRed: '#ff2a4b',
+            cadOrange: '#ff8a00',
+            cadGreen: '#00e676',
+            cadAmber: '#ffb300'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            tech: ['Chakra Petch', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#070b12] text-slate-100 min-h-screen font-sans selection:bg-cadAccent selection:text-black overflow-x-hidden antialiased">
+  
+  <!-- BACKGROUND GRID / RADAR EFFECT -->
+  <div class="fixed inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#1e3a5f_1px,transparent_1px)] [background-size:24px_24px] z-0"></div>
+
+  <!-- PERSISTENT SIMULATION BANNER -->
+  <div class="bg-gradient-to-r from-red-950 via-red-900 to-red-950 border-b border-red-700/60 text-red-200 text-xs px-4 py-1.5 flex items-center justify-between font-mono tracking-wider shadow-lg relative z-50">
+    <div class="flex items-center space-x-2">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+      <span class="font-bold text-white flex items-center gap-1.5">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-red-400"></i>
+        SIMULATION ONLY
+      </span>
+      <span class="hidden md:inline text-red-300/80">| FOR EDUCATIONAL &amp; TRAINING USE ONLY — NO REAL 911/112 CONNECTION</span>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span id="liveClock" class="text-white font-mono font-semibold">12:00:00 UTC</span>
+      <span class="bg-red-950/80 px-2 py-0.5 rounded border border-red-800 text-[10px] text-red-300 font-bold uppercase">OFFLINE SANDBOX</span>
+    </div>
+  </div>
+
+  <!-- NAVIGATION HEADER -->
+  <header class="border-b border-cadBorder bg-[#0a101d]/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center shadow-lg shadow-red-900/30 border border-red-400/30">
+          <i data-lucide="radio" class="w-5 h-5 text-white animate-pulse"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-tech text-xl font-bold tracking-wider text-white">APEX<span class="text-cadRed">911</span>-CAD</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-950/80 text-cadAccent border border-blue-800 font-semibold">v2.5 PRO</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-mono tracking-tight">Computer Aided Dispatch &amp; Emergency Call Generator</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Navigation Tabs -->
+      <nav class="hidden md:flex items-center space-x-1 bg-cadPanel/80 p-1 rounded-xl border border-cadBorder">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-tab active px-3.5 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Dashboard</span>
+        </button>
+        <button onclick="switchTab('generator')" id="nav-generator" class="nav-tab px-3.5 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+          <i data-lucide="phone-call" class="w-4 h-4"></i>
+          <span>Call Generator</span>
+        </button>
+        <button onclick="switchTab('history')" id="nav-history" class="nav-tab px-3.5 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+          <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+          <span>Call Logs</span>
+          <span id="historyBadge" class="bg-blue-900/70 text-cadAccent text-xs px-1.5 py-0.2 rounded-full font-mono">0</span>
+        </button>
+      </nav>
+
+      <!-- Sound Toggle & Quick Generate CTA -->
+      <div class="flex items-center space-x-2.5">
+        <button id="soundMasterBtn" onclick="toggleAudioMaster()" title="Toggle Dispatch Sound & Ringtone" class="p-2.5 rounded-xl bg-cadPanel border border-cadBorder hover:border-slate-500 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-mono">
+          <i id="soundMasterIcon" data-lucide="volume-2" class="w-4 h-4 text-cadGreen"></i>
+          <span id="soundMasterText" class="hidden sm:inline">AUDIO ON</span>
+        </button>
+        <button onclick="triggerQuickCall()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-medium text-sm shadow-lg shadow-red-950 flex items-center gap-2 border border-red-400/30 transition transform hover:-translate-y-0.5 active:translate-y-0">
+          <i data-lucide="zap" class="w-4 h-4 fill-white"></i>
+          <span class="font-semibold">Quick Trigger</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
+
+    <!-- TAB 1: DASHBOARD -->
+    <section id="tab-dashboard" class="space-y-6">
+      
+      <!-- STATS KPI CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Calls -->
+        <div class="bg-cadPanel/90 backdrop-blur border border-cadBorder p-4 rounded-2xl relative overflow-hidden group hover:border-slate-600 transition">
+          <div class="absolute right-3 top-3 text-slate-600 group-hover:text-slate-400 transition">
+            <i data-lucide="phone-outgoing" class="w-7 h-7"></i>
+          </div>
+          <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Total Simulated</p>
+          <h3 id="statTotalCalls" class="text-3xl font-tech font-bold text-white mt-1">0</h3>
+          <div class="mt-2 flex items-center text-xs text-blue-400 gap-1 font-mono">
+            <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+            <span>System Ready</span>
+          </div>
+        </div>
+
+        <!-- Active Calls -->
+        <div class="bg-cadPanel/90 backdrop-blur border border-cadBorder p-4 rounded-2xl relative overflow-hidden group hover:border-amber-600/50 transition">
+          <div class="absolute right-3 top-3 text-amber-500/40 group-hover:text-amber-500 transition">
+            <i data-lucide="activity" class="w-7 h-7"></i>
+          </div>
+          <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Active In-Call</p>
+          <h3 id="statActiveCalls" class="text-3xl font-tech font-bold text-amber-400 mt-1">0</h3>
+          <div class="mt-2 flex items-center text-xs text-amber-400/80 gap-1 font-mono">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="activeCallStatusText">Channel idle</span>
+          </div>
+        </div>
+
+        <!-- Completed Calls -->
+        <div class="bg-cadPanel/90 backdrop-blur border border-cadBorder p-4 rounded-2xl relative overflow-hidden group hover:border-emerald-600/50 transition">
+          <div class="absolute right-3 top-3 text-emerald-500/40 group-hover:text-emerald-500 transition">
+            <i data-lucide="check-circle" class="w-7 h-7"></i>
+          </div>
+          <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Completed / Handled</p>
+          <h3 id="statCompletedCalls" class="text-3xl font-tech font-bold text-cadGreen mt-1">0</h3>
+          <div class="mt-2 flex items-center text-xs text-emerald-400/80 gap-1 font-mono">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+            <span>Dispatched</span>
+          </div>
+        </div>
+
+        <!-- Rejected / Missed Calls -->
+        <div class="bg-cadPanel/90 backdrop-blur border border-cadBorder p-4 rounded-2xl relative overflow-hidden group hover:border-rose-600/50 transition">
+          <div class="absolute right-3 top-3 text-rose-500/40 group-hover:text-rose-500 transition">
+            <i data-lucide="phone-missed" class="w-7 h-7"></i>
+          </div>
+          <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Rejected / Ignored</p>
+          <h3 id="statRejectedCalls" class="text-3xl font-tech font-bold text-cadRed mt-1">0</h3>
+          <div class="mt-2 flex items-center text-xs text-rose-400/80 gap-1 font-mono">
+            <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+            <span>Declined</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN CONTROL DASHBOARD LAYOUT -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Operator Station Status & Fast Trigger -->
+        <div class="lg:col-span-1 space-y-6">
+          <div class="bg-cadPanel border border-cadBorder rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between pb-3 border-b border-cadBorder/70">
+              <div class="flex items-center gap-2">
+                <i data-lucide="terminal" class="w-5 h-5 text-cadAccent"></i>
+                <h3 class="font-tech uppercase font-bold text-white text-base tracking-wide">Dispatcher Console</h3>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-700/60 font-mono text-xs flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> ONLINE
+              </span>
+            </div>
+
+            <div class="mt-4 space-y-3 font-mono text-xs text-slate-300">
+              <div class="flex justify-between items-center py-1.5 border-b border-cadBorder/40">
+                <span class="text-slate-400">Terminal ID:</span>
+                <span class="text-white font-semibold">CAD-UNIT #409-E</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-cadBorder/40">
+                <span class="text-slate-400">Dispatch Sector:</span>
+                <span class="text-cadAccent">Metro Central (Zone 7)</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5 border-b border-cadBorder/40">
+                <span class="text-slate-400">Audio Synth:</span>
+                <span class="text-cadGreen font-semibold">WebAudio API (800Hz / 440Hz Ring)</span>
+              </div>
+              <div class="flex justify-between items-center py-1.5">
+                <span class="text-slate-400">Speech Synth:</span>
+                <span id="speechSupportBadge" class="text-slate-300">Detecting...</span>
+              </div>
+            </div>
+
+            <!-- Fast Action Buttons -->
+            <div class="mt-6 pt-4 border-t border-cadBorder/70 space-y-2.5">
+              <button onclick="switchTab('generator')" class="w-full py-2.5 px-4 rounded-xl bg-cadCard hover:bg-slate-800 border border-cadBorder hover:border-slate-500 font-semibold text-sm text-slate-200 transition flex items-center justify-center gap-2">
+                <i data-lucide="sliders" class="w-4 h-4 text-cadAccent"></i>
+                <span>Configure Custom Scenario</span>
+              </button>
+              <button onclick="triggerRandomUrgent()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:opacity-90 font-semibold text-sm text-white shadow-lg shadow-red-950/40 transition flex items-center justify-center gap-2">
+                <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+                <span>Trigger Critical Emergency Now</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Training Tips & Guide Card -->
+          <div class="bg-gradient-to-br from-blue-950/30 to-cadPanel border border-blue-900/40 rounded-2xl p-5">
+            <h4 class="font-tech text-sm font-bold text-blue-300 flex items-center gap-2">
+              <i data-lucide="help-circle" class="w-4 h-4 text-cadAccent"></i>
+              SIMULATOR INSTRUCTIONS
+            </h4>
+            <ul class="mt-3 space-y-2 text-xs text-slate-400 leading-relaxed list-disc list-inside">
+              <li>Click <strong class="text-slate-200">Quick Trigger</strong> or <strong class="text-slate-200">Generate New Call</strong> to start.</li>
+              <li>A mobile handset incoming call screen will overlay with audible ringing.</li>
+              <li>Accept to enter the <strong class="text-slate-200">Active Call CAD terminal</strong> with realistic multi-turn voice &amp; text AI dialog.</li>
+              <li>Use Speaker or Mute toggles to control simulation effects.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Right 2 Columns: Live Control Room Feed & Category Breakdown -->
+        <div class="lg:col-span-2 space-y-6">
+          
+          <!-- Category Quick Breakdown Pills -->
+          <div class="bg-cadPanel border border-cadBorder rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-tech uppercase font-bold text-white text-base tracking-wide flex items-center gap-2">
+                <i data-lucide="layers" class="w-5 h-5 text-cadAccent"></i>
+                Emergency Protocols Coverage
+              </h3>
+              <span class="text-xs text-slate-400 font-mono">6 Real-world Categories</span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <button onclick="triggerSpecificCategory('Medical Emergency')" class="p-3 rounded-xl bg-cadCard hover:bg-slate-800 border border-red-500/30 text-left transition group">
+                <div class="flex items-center justify-between">
+                  <span class="p-1.5 rounded-lg bg-red-950 text-cadRed border border-red-800/40"><i data-lucide="heart-pulse" class="w-4 h-4"></i></span>
+                  <span class="text-[10px] font-mono text-slate-400 group-hover:text-slate-200">SIMULATE &rarr;</span>
+                </div>
+                <div class="font-semibold text-xs mt-2 text-slate-200">Medical Emergency</div>
+                <div class="text-[11px] text-slate-400">Cardiac, Trauma, Stroke</div>
+              </button>
+
+              <button onclick="triggerSpecificCategory('Road Accident')" class="p-3 rounded-xl bg-cadCard hover:bg-slate-800 border border-amber-500/30 text-left transition group">
+                <div class="flex items-center justify-between">
+                  <span class="p-1.5 rounded-lg bg-amber-950 text-cadOrange border border-amber-800/40"><i data-lucide="car" class="w-4 h-4"></i></span>
+                  <span class="text-[10px] font-mono text-slate-400 group-hover:text-slate-200">SIMULATE &rarr;</span>
+                </div>
+                <div class="font-semibold text-xs mt-2 text-slate-200">Road Accident</div>
+                <div class="text-[11px] text-slate-400">Multi-vehicle collision</div>
+              </button>
+
+              <button onclick="triggerSpecificCategory('Fire Accident')" class="p-3 rounded-xl bg-cadCard hover:bg-slate-800 border border-orange-500/30 text-left transition group">
+                <div class="flex items-center justify-between">
+                  <span class="p-1.5 rounded-lg bg-orange-950 text-orange-400 border border-orange-800/40"><i data-lucide="flame" class="w-4 h-4"></i></span>
+                  <span class="text-[10px] font-mono text-slate-400 group-hover:text-slate-200">SIMULATE &rarr;</span>
+                </div>
+                <div class="font-semibold text-xs mt-2 text-slate-200">Fire Accident</div>
+                <div class="text-[11px] text-slate-400">Industrial, House fire</div>
+              </button>
+
+              <button onclick="triggerSpecificCategory('Crime Report')" class="p-3 rounded-xl bg-cadCard hover:bg-slate-800 border border-indigo-500/30 text-left transition group">
+                <div class="flex items-center justify-between">
+                  <span class="p-1.5 rounded-lg bg-indigo-950 text-indigo-400 border border-indigo-800/40"><i data-lucide="shield-alert" class="w-4 h-4"></i></span>
+                  <span class="text-[10px] font-mono text-slate-400 group-hover:text-slate-200">SIMULATE &rarr;</span>
+                </div>
+                <div class="font-semibold text-xs mt-2 text-slate-200">Crime Report</div>
+                <div class="text-[11px] text-slate-400">Armed burglary, Suspicion</div>
+              </button>
+
+              <button onclick="triggerSpecificCategory('Natural Disaster')" class="p-3 rounded-xl bg-cadCard hover:bg-slate-800 border border-cyan-500/30 text-left transition group">
+                <div class="flex items-center justify-between">
+                  <span class="p-1.5 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800/40"><i data-lucide="tornado" class="w-4 h-4"></i></span>
+                  <span class="text-[10px] font-mono text-slate-400 group-hover:text-slate-200">SIMULATE &rarr;</span>
+                </div>
+                <div class="font-semibold text-xs mt-2 text-slate-200">Natural Disaster</div>
+                <div class="text-[11px] text-slate-400">Flash flood, Tremor</div>
+              </button>
+
+              <button onclick="triggerSpecificCategory('Rescue Operation')" class="p-3 rounded-xl bg-cadCard hover:bg-slate-800 border border-emerald-500/30 text-left transition group">
+                <div class="flex items-center justify-between">
+                  <span class="p-1.5 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800/40"><i data-lucide="life-buoy" class="w-4 h-4"></i></span>
+                  <span class="text-[10px] font-mono text-slate-400 group-hover:text-slate-200">SIMULATE &rarr;</span>
+                </div>
+                <div class="font-semibold text-xs mt-2 text-slate-200">Rescue Operation</div>
+                <div class="text-[11px] text-slate-400">Elevator entrapment, River</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Recent Simulation Activity Feed -->
+          <div class="bg-cadPanel border border-cadBorder rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between pb-3 border-b border-cadBorder/70">
+              <div class="flex items-center gap-2">
+                <i data-lucide="history" class="w-5 h-5 text-cadAccent"></i>
+                <h3 class="font-tech uppercase font-bold text-white text-base tracking-wide">Live Dispatch Simulation Activity</h3>
+              </div>
+              <button onclick="switchTab('history')" class="text-xs text-cadAccent hover:underline font-mono">View All Logs &rarr;</button>
+            </div>
+
+            <!-- Activity list container -->
+            <div id="recentActivityList" class="mt-4 space-y-3">
+              <!-- Dynamically populated or empty state -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: FAKE CALL GENERATOR CONFIGURATOR -->
+    <section id="tab-generator" class="hidden space-y-6">
+      <div class="bg-cadPanel border border-cadBorder rounded-2xl p-6 lg:p-8 max-w-4xl mx-auto shadow-2xl">
+        <div class="flex items-start justify-between border-b border-cadBorder/80 pb-5">
+          <div>
+            <span class="text-xs font-mono font-bold text-cadAccent uppercase tracking-widest">Protocol 911-SIM</span>
+            <h2 class="text-2xl font-tech font-bold text-white mt-1">Simulated Emergency Call Generator</h2>
+            <p class="text-xs text-slate-400 mt-1">Configure fictional caller identity, priority metrics, and incident scenarios.</p>
+          </div>
+          <button type="button" onclick="randomizeAllInputs()" class="px-3 py-1.5 bg-cadCard hover:bg-slate-800 border border-cadBorder rounded-xl text-xs font-mono text-slate-200 flex items-center gap-1.5 transition">
+            <i data-lucide="shuffle" class="w-3.5 h-3.5 text-cadAccent"></i>
+            Randomize Values
+          </button>
+        </div>
+
+        <form id="callGeneratorForm" onsubmit="event.preventDefault(); startCustomCall();" class="mt-6 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Fictional Caller Name -->
+            <div>
+              <label class="block text-xs font-mono uppercase text-slate-300 font-semibold mb-2 flex items-center gap-1.5">
+                <i data-lucide="user" class="w-3.5 h-3.5 text-cadAccent"></i>
+                Fictional Caller Name
+              </label>
+              <div class="relative">
+                <input type="text" id="cfgCallerName" required placeholder="e.g., Jonathan Vance" class="w-full bg-cadCard border border-cadBorder rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cadAccent transition font-sans">
+                <button type="button" onclick="randomizeField('callerName')" class="absolute right-2 top-2 p-1 text-slate-400 hover:text-white" title="Randomize Name">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Fictional Phone Number -->
+            <div>
+              <label class="block text-xs font-mono uppercase text-slate-300 font-semibold mb-2 flex items-center gap-1.5">
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-cadAccent"></i>
+                Fictional Phone Number
+              </label>
+              <div class="relative">
+                <input type="text" id="cfgCallerPhone" required placeholder="e.g., +1 (555) 019-8234" class="w-full bg-cadCard border border-cadBorder rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cadAccent transition font-mono">
+                <button type="button" onclick="randomizeField('callerPhone')" class="absolute right-2 top-2 p-1 text-slate-400 hover:text-white" title="Randomize Phone">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Emergency Category -->
+            <div>
+              <label class="block text-xs font-mono uppercase text-slate-300 font-semibold mb-2 flex items-center gap-1.5">
+                <i data-lucide="tag" class="w-3.5 h-3.5 text-cadAccent"></i>
+                Emergency Category
+              </label>
+              <select id="cfgCategory" onchange="onCategorySelectChange()" class="w-full bg-cadCard border border-cadBorder rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cadAccent transition">
+                <option value="Medical Emergency">Medical Emergency</option>
+                <option value="Road Accident">Road Accident</option>
+                <option value="Fire Accident">Fire Accident</option>
+                <option value="Crime Report">Crime Report</option>
+                <option value="Natural Disaster">Natural Disaster</option>
+                <option value="Rescue Operation">Rescue Operation</option>
+              </select>
+            </div>
+
+            <!-- Emergency Priority Level -->
+            <div>
+              <label class="block text-xs font-mono uppercase text-slate-300 font-semibold mb-2 flex items-center gap-1.5">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-cadRed"></i>
+                Incident Priority Level
+              </label>
+              <select id="cfgPriority" class="w-full bg-cadCard border border-cadBorder rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cadAccent transition">
+                <option value="Critical">🔴 Critical (Code 3 - Immediate Hazard)</option>
+                <option value="High" selected>🟠 High (Code 2 - Urgent Response)</option>
+                <option value="Medium">🟡 Medium (Code 1 - Standard)</option>
+                <option value="Low">🟢 Low (Routine / Non-imminent)</option>
+              </select>
+            </div>
+
+            <!-- Fictional Location -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-mono uppercase text-slate-300 font-semibold mb-2 flex items-center gap-1.5">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-cadAccent"></i>
+                Fictional Incident Location &amp; Cross-Street
+              </label>
+              <div class="relative">
+                <input type="text" id="cfgLocation" required placeholder="e.g., 842 Elmhurst Ave, Sector 12" class="w-full bg-cadCard border border-cadBorder rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cadAccent transition font-sans">
+                <button type="button" onclick="randomizeField('location')" class="absolute right-2 top-2 p-1 text-slate-400 hover:text-white" title="Randomize Location">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Emergency Description / AI Scenario Prompt -->
+            <div class="md:col-span-2">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-mono uppercase text-slate-300 font-semibold flex items-center gap-1.5">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5 text-cadAccent"></i>
+                  Simulated Emergency Description &amp; Initial Statement
+                </label>
+                <button type="button" onclick="generateAIScenario()" class="text-xs font-mono text-cadAccent hover:underline flex items-center gap-1">
+                  <i data-lucide="sparkles" class="w-3 h-3"></i>
+                  Generate AI Scenario
+                </button>
+              </div>
+              <textarea id="cfgDescription" rows="3" required placeholder="Describe what the caller is reporting..." class="w-full bg-cadCard border border-cadBorder rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cadAccent transition font-sans resize-none"></textarea>
+            </div>
+          </div>
+
+          <!-- Ringtone & Call Options -->
+          <div class="p-4 rounded-xl bg-cadCard/50 border border-cadBorder flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+              <input type="checkbox" id="cfgAudioRingtone" checked class="w-4 h-4 rounded text-cadRed focus:ring-0 bg-slate-900 border-cadBorder">
+              <label for="cfgAudioRingtone" class="text-xs text-slate-300 font-mono cursor-pointer select-none">
+                Enable Audible Phone Ringtone Sound (WebAudio synth)
+              </label>
+            </div>
+            <div class="flex items-center space-x-3">
+              <input type="checkbox" id="cfgSpeechVoice" checked class="w-4 h-4 rounded text-cadAccent focus:ring-0 bg-slate-900 border-cadBorder">
+              <label for="cfgSpeechVoice" class="text-xs text-slate-300 font-mono cursor-pointer select-none">
+                Enable AI Text-to-Speech Caller Voice
+              </label>
+            </div>
+          </div>
+
+          <!-- Submit Buttons -->
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button type="submit" class="flex-1 py-3 px-6 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-600 text-white font-bold text-base shadow-xl shadow-red-950/50 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5 active:translate-y-0">
+              <i data-lucide="phone-incoming" class="w-5 h-5 animate-bounce"></i>
+              <span>Launch Incoming Call Simulation</span>
+            </button>
+            <button type="button" onclick="switchTab('dashboard')" class="py-3 px-6 rounded-xl bg-cadCard hover:bg-slate-800 border border-cadBorder text-slate-300 hover:text-white font-medium text-sm transition">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 3: CALL HISTORY & LOGS -->
+    <section id="tab-history" class="hidden space-y-6">
+      <div class="bg-cadPanel border border-cadBorder rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-cadBorder">
+          <div>
+            <h2 class="text-2xl font-tech font-bold text-white flex items-center gap-2">
+              <i data-lucide="archive" class="w-6 h-6 text-cadAccent"></i>
+              Emergency Simulation Logs &amp; CAD Records
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Stored offline in LocalStorage. Complete audit trail of past training runs.</p>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button onclick="exportLogsToCSV()" class="px-4 py-2 rounded-xl bg-cadCard hover:bg-slate-800 border border-cadBorder text-xs font-mono text-slate-200 hover:text-white flex items-center gap-1.5 transition">
+              <i data-lucide="download" class="w-3.5 h-3.5 text-cadGreen"></i>
+              Export CSV
+            </button>
+            <button onclick="clearAllHistory()" class="px-4 py-2 rounded-xl bg-red-950/60 hover:bg-red-900/60 border border-red-800/60 text-xs font-mono text-red-300 flex items-center gap-1.5 transition">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter and Search Bar -->
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="relative sm:col-span-2">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+            <input type="text" id="historySearch" oninput="renderHistoryTable()" placeholder="Search by caller, phone, location, or notes..." class="w-full bg-cadCard border border-cadBorder rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cadAccent transition">
+          </div>
+          <div>
+            <select id="historyFilterCat" onchange="renderHistoryTable()" class="w-full bg-cadCard border border-cadBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cadAccent transition">
+              <option value="ALL">All Categories</option>
+              <option value="Medical Emergency">Medical Emergency</option>
+              <option value="Road Accident">Road Accident</option>
+              <option value="Fire Accident">Fire Accident</option>
+              <option value="Crime Report">Crime Report</option>
+              <option value="Natural Disaster">Natural Disaster</option>
+              <option value="Rescue Operation">Rescue Operation</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Call Table -->
+        <div class="mt-5 overflow-x-auto rounded-xl border border-cadBorder">
+          <table class="w-full text-left text-xs font-sans">
+            <thead class="bg-cadCard/80 text-slate-400 font-mono uppercase text-[10px] tracking-wider border-b border-cadBorder">
+              <tr>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Timestamp</th>
+                <th class="py-3 px-4">Caller Identity</th>
+                <th class="py-3 px-4">Emergency Type</th>
+                <th class="py-3 px-4">Priority</th>
+                <th class="py-3 px-4">Duration</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-cadBorder/50 font-mono">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =============================================================== -->
+  <!-- MODAL 1: REALISTIC SMARTPHONE INCOMING CALL SCREEN              -->
+  <!-- =============================================================== -->
+  <div id="incomingCallModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <!-- Smartphone Shell -->
+    <div class="w-full max-w-sm rounded-[40px] bg-slate-950 border-4 border-slate-700 shadow-2xl overflow-hidden relative flex flex-col justify-between p-6 h-[640px] text-white animate-scaleUp">
+      
+      <!-- Top Speaker Notch -->
+      <div class="w-28 h-4 bg-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center">
+        <div class="w-3 h-3 rounded-full bg-slate-900 border border-slate-700"></div>
+      </div>
+
+      <!-- Watermark Simulation Alert -->
+      <div class="text-center">
+        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-950 text-red-400 border border-red-700/70 text-[10px] font-mono tracking-widest font-bold uppercase animate-pulse">
+          <i data-lucide="shield-alert" class="w-3 h-3"></i> SIMULATED CALL ONLY
+        </span>
+        <p class="text-slate-400 text-xs font-mono mt-1">INCOMING EMERGENCY CALL</p>
+      </div>
+
+      <!-- Caller Profile & Ringing Animation -->
+      <div class="text-center my-auto space-y-4">
+        <!-- Avatar with Pulsing Rings -->
+        <div class="relative w-28 h-28 mx-auto flex items-center justify-center">
+          <div class="absolute inset-0 rounded-full bg-red-600/30 animate-ping"></div>
+          <div class="absolute -inset-2 rounded-full border-2 border-red-500/40 animate-pulse"></div>
+          <div class="w-24 h-24 rounded-full bg-gradient-to-br from-red-600 via-rose-700 to-red-900 flex items-center justify-center shadow-xl border-2 border-red-400">
+            <i data-lucide="phone-call" class="w-10 h-10 text-white animate-bounce"></i>
+          </div>
+        </div>
+
+        <div>
+          <h2 id="incomingCallerName" class="text-2xl font-bold font-sans tracking-tight text-white">Caller Name</h2>
+          <p id="incomingCallerPhone" class="text-sm font-mono text-slate-300 mt-0.5">+1 (555) 000-0000</p>
+        </div>
+
+        <div class="bg-slate-900/90 rounded-2xl p-3 border border-slate-800 text-left space-y-1.5 max-w-[260px] mx-auto">
+          <div class="flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-400">CATEGORY:</span>
+            <span id="incomingCategoryBadge" class="text-cadRed font-semibold">Medical</span>
+          </div>
+          <div class="flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-400">PRIORITY:</span>
+            <span id="incomingPriorityBadge" class="text-amber-400 font-bold">HIGH</span>
+          </div>
+          <div class="text-[11px] text-slate-300 flex items-start gap-1 font-sans truncate" id="incomingLocationText">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
+            <span class="truncate">Sector 4, Central Metro</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audio Mute / Controls toggle for Ringing -->
+      <div class="flex justify-center mb-2">
+        <button onclick="toggleModalAudioRing()" id="ringMuteBtn" class="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-[11px] font-mono text-slate-300 flex items-center gap-1.5 hover:text-white">
+          <i id="ringMuteIcon" data-lucide="volume-2" class="w-3 h-3 text-cadGreen"></i>
+          <span id="ringMuteText">Mute Ringtone</span>
+        </button>
+      </div>
+
+      <!-- Accept / Reject Touch Actions -->
+      <div class="flex items-center justify-around px-2 pt-2 pb-4">
+        <!-- Reject Button (Red) -->
+        <div class="flex flex-col items-center">
+          <button onclick="rejectIncomingCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-lg shadow-red-950 transition transform hover:scale-110 active:scale-95 border-2 border-red-400/40">
+            <i data-lucide="phone-off" class="w-7 h-7"></i>
+          </button>
+          <span class="text-[11px] font-mono text-red-300 mt-2 font-semibold">Decline</span>
+        </div>
+
+        <!-- Accept Button (Green) -->
+        <div class="flex flex-col items-center">
+          <button onclick="acceptIncomingCall()" class="w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-950 transition transform hover:scale-110 active:scale-95 border-2 border-emerald-400/40 animate-pulse">
+            <i data-lucide="phone" class="w-7 h-7"></i>
+          </button>
+          <span class="text-[11px] font-mono text-emerald-300 mt-2 font-semibold">Accept Call</span>
+        </div>
+      </div>
+
+      <!-- Bottom Home Bar -->
+      <div class="w-32 h-1 bg-slate-700 rounded-full mx-auto"></div>
+    </div>
+  </div>
+
+  <!-- =============================================================== -->
+  <!-- MODAL 2: FULLSCREEN ACTIVE CAD CALL STATION                     -->
+  <!-- =============================================================== -->
+  <div id="activeCallModal" class="fixed inset-0 z-50 bg-[#060a12]/95 backdrop-blur-lg hidden flex flex-col overflow-y-auto">
+    
+    <!-- Top Active Header -->
+    <div class="border-b border-cadBorder bg-cadPanel/90 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="font-tech text-lg font-bold text-white tracking-wider">LIVE 911 DISPATCH CAD CONSOLE</h2>
+            <span class="px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-700 text-[10px] font-mono font-bold">SIMULATOR ACTIVE</span>
+          </div>
+          <p class="text-[11px] font-mono text-slate-400">Audio line active • End-to-end conversation recording</p>
+        </div>
+      </div>
+
+      <!-- Call Timer -->
+      <div class="flex items-center space-x-3">
+        <div class="bg-black/60 border border-emerald-500/40 rounded-xl px-4 py-1.5 flex items-center gap-2">
+          <i data-lucide="clock" class="w-4 h-4 text-emerald-400 animate-spin" style="animation-duration: 4s;"></i>
+          <span class="text-xs font-mono text-slate-400">DURATION:</span>
+          <span id="activeCallTimer" class="font-mono text-lg font-bold text-emerald-400">00:00</span>
+        </div>
+        <button onclick="endActiveCall()" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs uppercase flex items-center gap-2 shadow-lg shadow-red-950 transition">
+          <i data-lucide="phone-off" class="w-4 h-4"></i>
+          <span>End Simulation Call</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Call Body Layout -->
+    <div class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left CAD Telemetry Column -->
+      <div class="lg:col-span-1 space-y-4">
+        <!-- Caller Identity Card -->
+        <div class="bg-cadPanel border border-cadBorder rounded-2xl p-4 shadow-xl space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-cadBorder">
+            <span class="text-xs font-mono uppercase text-cadAccent font-bold">Caller Telemetry</span>
+            <span id="activePriorityBadge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 text-red-400 border border-red-800">CRITICAL</span>
+          </div>
+
+          <div class="space-y-2 text-xs font-mono">
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase">Name:</span>
+              <span id="activeCallerName" class="text-sm font-sans font-bold text-white">Jonathan Vance</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase">Calling Phone:</span>
+              <span id="activeCallerPhone" class="text-cadAccent">+1 (555) 019-8234</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase">Incident Location:</span>
+              <span id="activeCallerLocation" class="text-slate-200 font-sans">842 Elmhurst Ave, Sector 12</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase">Category:</span>
+              <span id="activeCallerCategory" class="text-amber-400 font-semibold">Medical Emergency</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Incident Briefing -->
+        <div class="bg-cadPanel border border-cadBorder rounded-2xl p-4 shadow-xl">
+          <span class="text-xs font-mono uppercase text-slate-400 font-bold block mb-1">Dispatched Scenario</span>
+          <p id="activeCallerDescription" class="text-xs text-slate-300 leading-relaxed font-sans bg-cadCard p-3 rounded-xl border border-cadBorder">
+            Loading scenario...
+          </p>
+        </div>
+
+        <!-- In-Call Device Controls -->
+        <div class="bg-cadPanel border border-cadBorder rounded-2xl p-4 shadow-xl">
+          <span class="text-xs font-mono uppercase text-slate-400 font-bold block mb-3">Audio &amp; Dispatch Controls</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnMuteMic" onclick="toggleMuteMic()" class="p-2.5 rounded-xl bg-cadCard hover:bg-slate-800 border border-cadBorder text-xs font-mono text-slate-200 flex items-center justify-center gap-1.5 transition">
+              <i id="iconMuteMic" data-lucide="mic" class="w-4 h-4 text-emerald-400"></i>
+              <span id="textMuteMic">Mic Active</span>
+            </button>
+            <button id="btnSpeaker" onclick="toggleSpeaker()" class="p-2.5 rounded-xl bg-cadCard hover:bg-slate-800 border border-cadBorder text-xs font-mono text-slate-200 flex items-center justify-center gap-1.5 transition">
+              <i id="iconSpeaker" data-lucide="volume-2" class="w-4 h-4 text-cadAccent"></i>
+              <span id="textSpeaker">Speaker On</span>
+            </button>
+          </div>
+          
+          <button onclick="requestNextAIStatement()" class="w-full mt-3 py-2 px-3 rounded-xl bg-blue-900/60 hover:bg-blue-800/80 border border-blue-700/60 text-blue-200 text-xs font-mono flex items-center justify-center gap-1.5 transition">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-cadAccent"></i>
+            <span>Prompt Caller For More Details</span>
+          </button>
+        </div>
+
+        <!-- Radio Protocol Guide -->
+        <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+          <p><span class="text-cadGreen font-semibold">Code 10-4:</span> Message Acknowledged</p>
+          <p><span class="text-cadOrange font-semibold">Code 10-33:</span> Emergency Traffic at Station</p>
+          <p><span class="text-cadRed font-semibold">Code 10-97:</span> Units Arrived on Scene</p>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Conversation Transcript & Dispatcher Responder -->
+      <div class="lg:col-span-2 flex flex-col bg-cadPanel border border-cadBorder rounded-2xl shadow-2xl overflow-hidden min-h-[500px]">
+        
+        <!-- Transcript Header -->
+        <div class="px-5 py-3 border-b border-cadBorder flex items-center justify-between bg-cadCard/50">
+          <div class="flex items-center gap-2">
+            <i data-lucide="messages-square" class="w-4 h-4 text-cadAccent"></i>
+            <span class="font-tech text-sm font-bold text-white uppercase tracking-wider">Simulated Audio / Text Transcript</span>
+          </div>
+          <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> AI SPEECH SYNTH
+          </span>
+        </div>
+
+        <!-- Chat Stream Box -->
+        <div id="transcriptBox" class="flex-1 p-4 md:p-5 overflow-y-auto space-y-3 font-sans text-xs">
+          <!-- Dynamically appended conversation bubbles -->
+        </div>
+
+        <!-- Suggested Fast Dispatch Answers -->
+        <div class="p-3 bg-cadCard/30 border-t border-cadBorder">
+          <div class="text-[10px] font-mono uppercase text-slate-400 mb-1.5">Quick Dispatcher Inquiries (Click to ask):</div>
+          <div class="flex flex-wrap gap-1.5" id="suggestedResponsesContainer">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Interactive Dispatcher Input Form -->
+        <form onsubmit="event.preventDefault(); submitDispatcherMessage();" class="p-3 md:p-4 bg-cadCard border-t border-cadBorder flex items-center gap-2">
+          <input type="text" id="dispatcherCustomInput" placeholder="Type your 911 dispatcher response or command..." class="flex-1 bg-cadPanel border border-cadBorder rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cadAccent transition font-sans">
+          <button type="submit" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-semibold flex items-center gap-1.5 transition">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Transmit</span>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script src="app.js"></script>
+</body>
+</html>
+

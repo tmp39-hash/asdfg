@@ -1,0 +1,66 @@
+/* FAKE EMERGENCY CALL GENERATOR CUSTOM STYLES */
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(255, 42, 75, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 42, 75, 0.8);
+  }
+}
+
+.animate-scaleUp {
+  animation: scaleUpAnim 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleUpAnim {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(14, 22, 38, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 46, 74, 0.8);
+}
+
+/* Nav Active Styling */
+.nav-tab.active {
+  background: #131e33;
+  color: #00e5ff;
+  border: 1px solid #1e2e4a;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080c14;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e2e4a;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334e7a;
+}
+
+/* Audio Waveform visualization bar */
+.audio-bar {
+  animation: audioBounce 1.2s ease-in-out infinite alternate;
+}
+@keyframes audioBounce {
+  0% { height: 4px; }
+  100% { height: 24px; }
+}
+
